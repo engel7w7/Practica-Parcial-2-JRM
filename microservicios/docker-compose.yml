@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - medicos-service
+      - citas-service
+    networks:
+      - appnet
+
+  auth-service:
+    build: ./auth-service
+    image: auth:1.0
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./auth-service/.env
+    environment:
+      - LARAVEL_API=http://host.docker.internal:8000
+    networks:
+      - appnet
+
+  medicos-service:
+    build: ./medicos-service
+    image: medicos:1.0
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./medicos-service/.env
+    environment:
+      - LARAVEL_API=http://host.docker.internal:8000
+    networks:
+      - appnet
+
+  citas-service:
+    build: ./citas-service
+    image: citas:1.0
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./citas-service/.env
+    networks:
+      - appnet
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - appnet
+
+volumes:
+  mongo_data:
+
+networks:
+  appnet:
+    driver: bridge
